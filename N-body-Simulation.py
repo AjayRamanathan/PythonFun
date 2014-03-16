@@ -10,6 +10,7 @@ from time import time
 
 N = 2
 G = 0.125
+R = 5
 
 MASS = zeros(N,dtype=float)
 POSITION = zeros((N,2),dtype=float)
@@ -56,15 +57,30 @@ for i in xrange(N):
 	POSITION[i] = UNIVERSE.min() + array([random(),random()])*UNIVERSE.length
 
 class Physics:
-	global N, POSITION, VELOCITY, ACCELERATION, MASS
+	global N
 	def __init__(self, universe):
 		self.universe = universe
 
 	def updateSys(self, Skip_Time):
-		global VELOCITY, POSITION
+		global VELOCITY, POSITION, ACCELERATION, MASS
 		self.calculateAcceleration()
 		VELOCITY = VELOCITY + ACCELERATION * Skip_Time
 		POSITION += VELOCITY * Skip_Time  + ACCELERATION * Skip_Time * Skip_Time
+		self.checkCollision()
+	
+	def checkCollision(self):
+		global R
+		for i in xrange(N):
+			if MASS[i] != 0:
+			  for k in xrange(N):
+				  if i != k and MASS[k] != 0: 
+						Distance = getDistance(POSITION[k], POSITION[i])
+						if Distance < (MASS[i]*0.1+MASS[k]*0.1):
+						#Work Needed	
+								VELOCITY[i] = ((MASS[i]*VELOCITY[i])+(MASS[k]*VELOCITY[k]))/(MASS[i]+MASS[k])
+								POSITION[i] = ((MASS[i]*POSITION[i])+(MASS[k]*POSITION[k]))/(MASS[i]+MASS[k])
+								MASS[i] += MASS[k]
+								MASS[k] = 0
 
 	def calculateAcceleration(self):
 		for i in xrange(N):
@@ -74,22 +90,30 @@ class Physics:
 		acc = zeros((1,2),dtype=float)
 		for i in xrange(N):
 			if k != i:
-			   acc += getAcceleration(POSITION[k], MASS[k], POSITION[i], MASS[i])
+				 acc += getAcceleration(POSITION[k], MASS[k], POSITION[i], MASS[i])
 		return acc
 
 def getAcceleration(p1,m1,p2,m2):
 	vector = p2-p1
 	radius = sqrt(vector.dot(vector))
-	acceleration = array(( vector * G*m1*m2 / radius**3 ))/m1  
-	return acceleration    	   
+	acceleration = 0
+	if radius != 0:
+	  acceleration = array(( vector * G*m1*m2 / radius**3 ))/m1  
+	return acceleration   
+
+def getDistance(p1,p2):
+	vector = p2-p1
+	distance = sqrt(vector.dot(vector))	
+	return distance   
 	
 sys = Physics(UNIVERSE)
 
 def drawBodies(drawPtr):
+	global R
 	for x in xrange(N):
 		if UNIVERSE.inside(POSITION[x]):
 			p = convertPos(POSITION[x])
-			r = MASS[x]*5
+			r = MASS[x]*R
 			drawPtr.ellipse( join(p-r,p+r) , fill = (0,0,0) )
 
 def convertPos(p):
@@ -98,7 +122,7 @@ def convertPos(p):
 	return c
 
 def join(p1,p2):
-    return ([p1[0],p1[1],p2[0],p2[1]])	
+		return ([p1[0],p1[1],p2[0],p2[1]])	
 
 def task_update():
 	global Time,boo
