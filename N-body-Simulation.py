@@ -1,36 +1,28 @@
 #! /usr/bin/python 
 # A N-Body problem solver 
-#
 
 from numpy import *
 from random import random,seed
+import Tkinter
+from PIL import Image, ImageDraw
+import ImageTk
+from time import time
 
-G= 0.125
 N = 100
+G = 0.125
 
-class Iteratate(type):
-    def __iter__(self):
-        return self.classiter()
+MASS = zeros(N,dtype=float)
+POSITION = zeros((N,2),dtype=float)
+VELOCITY = zeros((N,2),dtype=float)
+ACCELERATION = zeros((N,2),dtype=float)
 
-class Objects:
-    __metaclass__ = Iteratate
-    by_id = {}
-    def __init__(self, mass, position, velocity, acceleration, id):
-        self.mass = mass
-        self.position = position
-        self.velocity = velocity
-        self.acceleration = acceleration
-        self.radius = math.sqrt(self.mass)
-        self.id = id
-        self.by_id[id] = self
-    
-    def __repr__(self):
-       return self.__str__()
+Skip_Time = 0.1
+Time = 0
 
-    def __str__(self):
-       return "<<%g,%g,%g,%g>>" % (self.mass,self.position,self.velocity,self.acceleration)
-       return iter(cls.by_id.values())
-    
+IMAGE_SIZE = (600,400)
+GRID_SIZE = 10
+CIRCLE_RADIUS = 10
+
 class Universe:
     def __init__(self,edge,dimension=2):
         assert(dimension*2 == len(edge))
@@ -47,45 +39,96 @@ class Universe:
     
     def __repr__(self):
         return self.__str__()
+
+    def inside(self,p):
+        if any(p < self.min()) or any(p > self.max()):
+            return False
+        else:
+            return True    
     
     def __str__(self):
         return "<<%g,%g,%g,%g>>" % (self.edge[0],self.edge[1],self.edge[2],self.edge[3])
 
-UNIVERSE = Universe([-10,-10,10,10])  
-OBJECTS = Iteratate
+UNIVERSE = Universe([0,0,10,10])        
 
 for i in xrange(N):
-    MASS = 1
-    POSITION = UNIVERSE.min() + array([random(),random()])*UNIVERSE.length
-    VELOCITY = UNIVERSE.min() + array([random(),random()])*UNIVERSE.length
-    ACCELERATION = UNIVERSE.min() + array([random(),random()])*UNIVERSE.length
-    OBJECTS = Objects(MASS, POSITION, VELOCITY, ACCELERATION)
+    MASS[i] = 1
+    POSITION[i] = UNIVERSE.min() + array([random(),random()])*UNIVERSE.length
 
-def getForce(i1, i2):
+class Physics:
+    def __init__(self, universe, N, position, velocity,acceleration, mass):
+        self.universe = universe
+        self.N = N
+        self.mass = mass
+        self.position = position
+        self.velocity = velocity
+        self.acceleration = acceleration
 
-    vector = i2.position-i1.position
+    def updateSys(self, Skip_Time):
+        self.calculateAcceleration()
+        self.velocity += self.acceleration * Skip_Time
+        self.position += self.velocity * Skip_Time  + self.acceleration * Skip_Time * Skip_Time
+
+    def calculateAcceleration(self):
+        for i in xrange(self.N):
+            self.acceleration[i] = self.calculateBodyAcceleration(i)
+
+    def calculateBodyAcceleration(self, k):              
+        acc = zeros((1,2),dtype=float)
+        for i in xrange(self.N):
+        	if k != i:
+        	   acc += getAcceleration(self.position[k], self.mass[k], self.position[i], self.mass[i])
+
+def getAcceleration(p1,m1,p2,m2):
+    vector = p2-p1
     radius = sqrt(vector.dot(vector))
-    force = array( vector * G*p.mass*p2.mass / radius**3 )
-    return force 
+    acceleration = array(( vector * G*m1*m2 / radius**3 ))/m1  
+    return acceleration    	   
+    
+sys = Physics(UNIVERSE, N, POSITION, VELOCITY, ACCELERATION, MASS)
 
-for i1 in OBJECTS:
-    for i2 in OBJECTS:
-        if i1 != i2:
-            acceleration = getForce(i1, i2) / i1.mass
-            i1.acceleration += acceleration
+def drawBodies(drawPtr):
+    for x in xrange(N):
+        if UNIVERSE.inside(POSITION[x]):
+            p = convertPos(POSITION[x])
+            r = MASS[x]*5
+            drawPtr.ellipse( join(p-r,p+r) , fill = (0,0,0) )
 
-for i in OBJECTS:
-	i.velocity += i.acceleration
-        i.position += i.velocity
+def convertPos(p):
+    c = trunc( ( p - UNIVERSE.min()) / (UNIVERSE.max()-UNIVERSE.min()) * array(IMAGE_SIZE) ).tolist()
+    c[1] = IMAGE_SIZE[1] - c[1]
+    return c
 
-for i1 in OBJECTS:
-    for i2 in OBJECTS:
-        if i1 != i2:
-            vector = i2.position-i1.position
-            radius = sqrt(vector.dot(vector))
-            if Distance < (i1.radius+i2.radius):
-                p.velocity = ((i.mass*i.velocity)+(i2.mass*i2.velocity))/(i.mass+i2.mass)
-                i.position = ((i.mass*i.position)+(i2.mass*i2.position))/(i.mass+i2.mass)
-                i.mass += i2.mass
-                i.radius = math.sqrt(i.mass)
-                Objects.remove(i2)
+def task_update():
+    global Time,boo
+    Time += Skip_Time
+
+    im = Image.new('RGB', IMAGE_SIZE, (255,255,255))
+    draw = ImageDraw.Draw(im)
+
+    drawBodies(draw)
+
+    sys.updateSys(Skip_Time)
+
+    boo = ImageTk.PhotoImage(im)
+    label_image.config(image=boo)
+    label_image.pack()
+
+    root.after(10,task_update)
+
+def button_click_exit_mainloop (event):
+    event.widget.quit() 
+
+root = Tkinter.Tk()
+root.bind("<Button>", button_click_exit_mainloop)
+label_image = Tkinter.Label(root)
+Time += Skip_Time
+sys.updateSys(Skip_Time)
+im = Image.new('RGB', IMAGE_SIZE, (255,255,255))
+draw = ImageDraw.Draw(im)
+
+drawBodies(draw)
+
+task_update()
+root.mainloop()
+print "Done."
