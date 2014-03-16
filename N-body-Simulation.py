@@ -8,7 +8,7 @@ from PIL import Image, ImageDraw
 import ImageTk
 from time import time
 
-N = 5
+N = 100
 #Number of Particles
 G = 0.125
 #Gravitional Constant
@@ -68,6 +68,65 @@ for i in xrange(N):
 	POSITION[i] = UNIVERSE.min() + array([random(),random()])*UNIVERSE.length
 	#Random Initial position
 
+class Tree:
+		#A smaller rectangles, contains some point bodies considered as one
+		def __init__(self,universe,bodies = None,depth=0):
+				self.universe = universe
+				self.center = universe.center
+				self.leaf = True # Whether is a parent or not
+				self.depth = depth
+				if bodies != None: # want to capture 0 int also
+						self.setToBody(bodies)
+						self.number = 1
+				else:
+						self.bodies = []
+						self.mass = 0.
+						self.center = array([0,0], dtype=float)
+						self.number = 0
+						
+				self.children = [None]*4
+
+		def addBody(self, k,depth):
+				if len(self.bodies) > 0 or not self.leaf:
+						if (depth >= MAXDEPTH):
+								self.bods.append(k)
+						else:
+								subBodies = [k]
+								if len(self.bodies) > 0:
+										subBodies.append(self.bodies[0])
+										self.bodies = []
+
+								for bodiees in subBodies:
+										ID = self.getTreenumber(bodies)
+										if self.children[ID]:
+												self.children[ID].addBody(bodies,depth+1)
+										else:
+												subuniverse = self.universe.getSubQuad(ID)
+												self.children[ID] = Quad(subuniverse, bodies, depth+1)
+
+								self.leaf = False
+
+						weight = MASS[k]
+						self.center = (self.center * self.mass + POSITION[k] * weight) / (self.mass + weight)
+						self.mass += weight
+				else:
+						self.setToBody(k)
+
+		#def updatecenter(self):
+				#if self.leaf:
+						#self.mass = array(map(lambda x: MASS[x], self.bodies)).sum() #Total Mass
+						#self.center = array(map(lambda x: POS[x]*MASS[x], self.bodies)).sum(0) / self.mass #New Center of mass
+				#else:
+						#self.mass = array(map(lambda child: child.mass if child else 0, self.children)).sum()  #Mass and Center of child-nodes
+						#self.com = array(map(lambda child: child.mass*child.com if child else zeros(2), self.children)).sum(0) / self.mass
+				
+		def setToBody(self,k):
+				self.bods = [k]
+				self.mass = float( MASS[k].copy() )
+				self.center = POS[k].copy()
+
+		def getTreenumber(self,k):
+				return self.universe.getTreenumber(POS[k])
 
 class Physics: #Class Physics: Physics of the system
 	global N, CONSTANT
@@ -77,7 +136,7 @@ class Physics: #Class Physics: Physics of the system
 		self.universe = universe
 		self.initialize()
 	def initialize(self):
-		self.tree() = Tree(self.universe)
+		self.tree = Tree(self.universe)
 	def generate(self): #generate a new tree
 				self.initialize()
 				for x in xrange(self.N): # For each body, add to tree
@@ -102,27 +161,27 @@ class Physics: #Class Physics: Physics of the system
 
 	def calculateBHAcceleration(self):#Calculate Accceleration of all the bodies
 		for i in xrange(N):
-			ACCELERATION[i] = self.calculateBodyAcceleration(i, self.tree) 
+			ACCELERATION[i] = self.calculateBHBodyAcceleration(i, self.tree) 
 
 	def calculateBHBodyAcceleration(self, i, tree):  #calculate the acceleration of one body            
 		acc = zeros((1,2),dtype=float)
 		if (tree.leaf):
-				for k in tree.objects:
+				for k in tree.bodies:
 						if k != i:
-						    acc += getForce( POSITION[i] ,MASS[i],POSITION[k],MASS[k])
+								acc += getForce( POSITION[i] ,MASS[i],POSITION[k],MASS[k])
 		else:
 				maxlength = max( node.box.sideLength )
 				vector = tree.center - POSITION[i]
 				radius = sqrt(vector.dot(vector))
-				if (radius > 0 and maxlength/radius < self.theta):
+				if (radius > 0 and maxlength/radius < CONSTANT):
 						acc += getForce( POSITION[i] ,MASS[i], tree.position, tree.mass)
 				else:
 						for k in xrange(4):
 								if tree.children[k] != None:
 										acc += self.calculateBodyAccelR(k, node.children[k])
 				return acc
-		for i in xrange(N):
-			if k != i and MASS[i] != 0:
+		for k in xrange(N):
+			if i != k and MASS[i] != 0:
 				 acc += getAcceleration(POSITION[k], MASS[k], POSITION[i], MASS[i]) #Sum of all accelerations
 		return acc
 
@@ -181,42 +240,6 @@ root = Tkinter.Tk() #Initialization of screen
 root.bind("<Button>", button_click_exit_mainloop)
 label_image = Tkinter.Label(root)
 Time += Skip_Time #First time change
-
-class Tree:
-		#A smaller rectangles, contains some point bodies considered as one
-		def __init__(self,universe,bodies = None,depth=0):
-				self.bbox = bbox
-				self.center = bbox.center
-				self.leaf = True # Whether is a parent or not
-				self.depth = depth
-				if bodies != None: # want to capture 0 int also
-						self.setToBody(bodies)
-						self.number = 1
-				else:
-						self.bodies = []
-						self.mass = 0.
-						self.center = array([0,0], dtype=float)
-						self.number = 0
-						
-				self.children = [None]*4 # for
-
-	def addBody(self, k,depth):
-		
-	def updatecenter(self):
-			if self.leaf:
-					self.mass = array(map(lambda x: MASS[x], self.bodies)).sum() #Total Mass
-					self.center = array(map(lambda x: POS[x]*MASS[x], self.bodies)).sum(0) / self.mass #New Center of mass
-			else:
-					self.mass = array(map(lambda child: child.mass if child else 0, self.children)).sum()  #Mass and Center of child-nodes
-					self.com = array(map(lambda child: child.mass*child.com if child else zeros(2), self.children)).sum(0) / self.mass
-				
-	def setToBody(self,k):
-			self.bods = [k]
-			self.mass = float( MASS[k].copy() )
-			self.center = POS[k].copy()
-
-	def getTreenumber(self,k):
-			return self.universe.getTreenumber(POS[k])
 
 sys.updateSys(Skip_Time)
 
