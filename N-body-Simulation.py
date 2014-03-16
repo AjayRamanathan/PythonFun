@@ -70,11 +70,12 @@ class Physics:
 	
 	def checkCollision(self):
 		global R
+		print R
 		for i in xrange(N):
 			for k in xrange(N):
 				if i != k and MASS[k]!= 0:
-						Distance = getDistance(POSITION[k], POSITION[i])
-						if Distance < (MASS[i]*0.5+MASS[k]*0.5):
+						Distance = getDistance(POSITION[k], POSITION[i])*R*2
+						if Distance < MASS[i]+MASS[k]:
 						#Work Needed	
 								VELOCITY[i] = ((MASS[i]*VELOCITY[i])+(MASS[k]*VELOCITY[k]))/(MASS[i]+MASS[k])
 								POSITION[i] = ((MASS[i]*POSITION[i])+(MASS[k]*POSITION[k]))/(MASS[i]+MASS[k])
