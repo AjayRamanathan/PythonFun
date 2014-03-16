@@ -17,7 +17,6 @@ R = 4
 CONSTANT = 0.5
 #Barnes-Hut Constant
 MAXDEPTH = 10
-#GRID_SIZE = 10
 CROSS_SIZE = 20
 
 MASS = zeros(N,dtype=float)
