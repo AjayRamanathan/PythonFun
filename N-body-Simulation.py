@@ -14,6 +14,9 @@ G = 0.125
 #Gravitional Constant
 R = 5
 #Radius; changes the radius in UI
+CONSTANT = 0.5
+#Barnes-Hut Constant
+MAXDEPTH = 0
 
 MASS = zeros(N,dtype=float)
 POSITION = zeros((N,2),dtype=float)
@@ -53,7 +56,7 @@ class Universe:#Class Universe; Boundaries
 		else:
 			return True    
 	
-	def __str__(self): #Input
+	def __str__(self): #Output
 		return "<<%g,%g,%g,%g>>" % (self.edge[0],self.edge[1],self.edge[2],self.edge[3])
 
 UNIVERSE = Universe([0,0,10,10])        
@@ -67,17 +70,24 @@ for i in xrange(N):
 
 
 class Physics: #Class Physics: Physics of the system
-	global N
+	global N, CONSTANT
+	tree = None
+	
 	def __init__(self, universe):
 		self.universe = universe
-
+		self.initialize()
+	def initialize(self):
+		self.tree() = Tree(self.universe)
+	def generate(self): #generate a new tree
+				self.initialize()
+				for x in xrange(self.N): # For each body, add to tree
+						self.tree.addBody(x,0)  
 	def updateSys(self, Skip_Time):#Iterate over time
 		global VELOCITY, POSITION, ACCELERATION, MASS
-		self.calculateAcceleration()
+		self.calculateBHAcceleration()
 		VELOCITY = VELOCITY + ACCELERATION * Skip_Time #New Velocity
 		POSITION += VELOCITY * Skip_Time  + ACCELERATION * Skip_Time * Skip_Time #New Position
 		self.checkCollision() #Check for Collision
-	
 	def checkCollision(self):#Check for Collision
 		global R
 		for i in xrange(N):
@@ -90,12 +100,27 @@ class Physics: #Class Physics: Physics of the system
 								MASS[i] += MASS[k] 
 								MASS[k] = 0 #Mass of partitcle 2 is 0; New Mass,New Velocity, and New Position
 
-	def calculateAcceleration(self):#Calculate Accceleration of all the bodies
+	def calculateBHAcceleration(self):#Calculate Accceleration of all the bodies
 		for i in xrange(N):
-			ACCELERATION[i] = self.calculateBodyAcceleration(i) 
+			ACCELERATION[i] = self.calculateBodyAcceleration(i, self.tree) 
 
-	def calculateBodyAcceleration(self, k):  #calculate the acceleration of one body            
+	def calculateBHBodyAcceleration(self, i, tree):  #calculate the acceleration of one body            
 		acc = zeros((1,2),dtype=float)
+		if (tree.leaf):
+				for k in tree.objects:
+						if k != i:
+						    acc += getForce( POSITION[i] ,MASS[i],POSITION[k],MASS[k])
+		else:
+				maxlength = max( node.box.sideLength )
+				vector = tree.center - POSITION[i]
+				radius = sqrt(vector.dot(vector))
+				if (radius > 0 and maxlength/radius < self.theta):
+						acc += getForce( POSITION[i] ,MASS[i], tree.position, tree.mass)
+				else:
+						for k in xrange(4):
+								if tree.children[k] != None:
+										acc += self.calculateBodyAccelR(k, node.children[k])
+				return acc
 		for i in xrange(N):
 			if k != i and MASS[i] != 0:
 				 acc += getAcceleration(POSITION[k], MASS[k], POSITION[i], MASS[i]) #Sum of all accelerations
@@ -106,12 +131,12 @@ def getAcceleration(p1,m1,p2,m2): #Calculates acceleration between two objects
 	radius = sqrt(vector.dot(vector))
 	acceleration = 0
 	if m1 != 0 and m2 != 0:
-	  acceleration = array(( vector * G*m1*m2 / radius**3 ))/m1  
+		acceleration = array(( vector * G*m1*m2 / radius**3 ))/m1  
 	return acceleration   
 
 def getDistance(p1,p2): #calculates Distance between two objects
 	vector = p2-p1
-	distance = sqrt(vector.dot(vector))	
+	distance = sqrt(vector.dot(vector)) 
 	return distance   
 	
 sys = Physics(UNIVERSE) #Physics Initiated
@@ -130,7 +155,7 @@ def convertPos(p): #making the bodies eliptical
 	return c
 
 def join(p1,p2): #line between Two points
-		return ([p1[0],p1[1],p2[0],p2[1]])	
+		return ([p1[0],p1[1],p2[0],p2[1]])  
 
 def task_update(): #time
 	global Time, icon
@@ -156,6 +181,42 @@ root = Tkinter.Tk() #Initialization of screen
 root.bind("<Button>", button_click_exit_mainloop)
 label_image = Tkinter.Label(root)
 Time += Skip_Time #First time change
+
+class Tree:
+		#A smaller rectangles, contains some point bodies considered as one
+		def __init__(self,universe,bodies = None,depth=0):
+				self.bbox = bbox
+				self.center = bbox.center
+				self.leaf = True # Whether is a parent or not
+				self.depth = depth
+				if bodies != None: # want to capture 0 int also
+						self.setToBody(bodies)
+						self.number = 1
+				else:
+						self.bodies = []
+						self.mass = 0.
+						self.center = array([0,0], dtype=float)
+						self.number = 0
+						
+				self.children = [None]*4 # for
+
+	def addBody(self, k,depth):
+		
+	def updatecenter(self):
+			if self.leaf:
+					self.mass = array(map(lambda x: MASS[x], self.bodies)).sum() #Total Mass
+					self.center = array(map(lambda x: POS[x]*MASS[x], self.bodies)).sum(0) / self.mass #New Center of mass
+			else:
+					self.mass = array(map(lambda child: child.mass if child else 0, self.children)).sum()  #Mass and Center of child-nodes
+					self.com = array(map(lambda child: child.mass*child.com if child else zeros(2), self.children)).sum(0) / self.mass
+				
+	def setToBody(self,k):
+			self.bods = [k]
+			self.mass = float( MASS[k].copy() )
+			self.center = POS[k].copy()
+
+	def getTreenumber(self,k):
+			return self.universe.getTreenumber(POS[k])
 
 sys.updateSys(Skip_Time)
 
