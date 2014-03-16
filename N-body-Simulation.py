@@ -8,11 +8,11 @@ from PIL import Image, ImageDraw
 import ImageTk
 from time import time
 
-N = 5
+N = 50
 #Number of Particles
 G = 0.125
 #Gravitional Constant
-R = 5
+R = 4
 #Radius; changes the radius in UI
 CONSTANT = 0.5
 #Barnes-Hut Constant
@@ -170,13 +170,13 @@ class Physics: #Class Physics: Physics of the system
 		if (tree.leaf):
 				for k in tree.bodies:
 						if k != i:
-								acc += getForce( POSITION[i] ,MASS[i],POSITION[k],MASS[k])
+								acc += getAcceleration( POSITION[i] ,MASS[i],POSITION[k],MASS[k])
 		else:
 				maxlength = max( node.box.sideLength )
 				vector = tree.center - POSITION[i]
 				radius = sqrt(vector.dot(vector))
 				if (radius > 0 and maxlength/radius < CONSTANT):
-						acc += getForce( POSITION[i] ,MASS[i], tree.position, tree.mass)
+						acc += getAcceleration( POSITION[i] ,MASS[i], tree.position, tree.mass)
 				else:
 						for k in xrange(4):
 								if tree.children[k] != None:
@@ -221,6 +221,7 @@ def drawBOX(drawPtr, foo):
 
 		p = join(convertPos(foo.universe.min()),
 						 convertPos(foo.universe.max()))
+		print p
 		drawPtr.rectangle( p , outline=(0,0,255) )
 
 def drawLine(drawPtr, p1, p2, color):
@@ -233,10 +234,8 @@ def drawCross(drawPtr, p):
 		drawPtr.line( (p[0],p[1]-CROSS_SIZE,p[0],p[1]+CROSS_SIZE), fill=(0,255,0) )
 
 def drawTree(drawPtr ,bar):
-	print "1"
 	drawTreeDetail(drawPtr, bar.tree)
 def drawTreeDetail(drawPtr, tree):
-	print "2"
 	drawBOX(drawPtr,tree)
 	for child in tree.children:
 		if child != None:
