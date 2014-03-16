@@ -17,6 +17,8 @@ R = 5
 CONSTANT = 0.5
 #Barnes-Hut Constant
 MAXDEPTH = 0
+#GRID_SIZE = 10
+CROSS_SIZE = 20
 
 MASS = zeros(N,dtype=float)
 POSITION = zeros((N,2),dtype=float)
@@ -112,13 +114,13 @@ class Tree:
 				else:
 						self.setToBody(k)
 
-		#def updatecenter(self):
-				#if self.leaf:
-						#self.mass = array(map(lambda x: MASS[x], self.bodies)).sum() #Total Mass
-						#self.center = array(map(lambda x: POS[x]*MASS[x], self.bodies)).sum(0) / self.mass #New Center of mass
-				#else:
-						#self.mass = array(map(lambda child: child.mass if child else 0, self.children)).sum()  #Mass and Center of child-nodes
-						#self.com = array(map(lambda child: child.mass*child.com if child else zeros(2), self.children)).sum(0) / self.mass
+		def updatecenter(self):
+				if self.leaf:
+						self.mass = array(map(lambda x: MASS[x], self.bodies)).sum() #Total Mass
+						self.center = array(map(lambda x: POS[x]*MASS[x], self.bodies)).sum(0) / self.mass #New Center of mass
+				else:
+						self.mass = array(map(lambda child: child.mass if child else 0, self.children)).sum()  #Mass and Center of child-nodes
+						self.com = array(map(lambda child: child.mass*child.com if child else zeros(2), self.children)).sum(0) / self.mass
 				
 		def setToBody(self,k):
 				self.bods = [k]
@@ -139,7 +141,7 @@ class Physics: #Class Physics: Physics of the system
 		self.tree = Tree(self.universe)
 	def generate(self): #generate a new tree
 				self.initialize()
-				for x in xrange(self.N): # For each body, add to tree
+				for x in xrange(self.tree.number): # For each body, add to tree
 						self.tree.addBody(x,0)  
 	def updateSys(self, Skip_Time):#Iterate over time
 		global VELOCITY, POSITION, ACCELERATION, MASS
@@ -200,6 +202,55 @@ def getDistance(p1,p2): #calculates Distance between two objects
 	
 sys = Physics(UNIVERSE) #Physics Initiated
 
+#def drawAccelGrid(drawPtr, gridSize):
+
+#		MAX_ACC = 1
+#		boundmax = max(UNIVERSE.max())
+#		for x in xrange(gridSize):
+	#			for y in xrange(gridSize):
+	#					p = array([x+0.5,y+0.5],dtype=float) * UNIVERSE.length / gridSize
+	#					acc = sys.calculateAccel(p)
+	#					mag = sqrt((acc*acc).sum())
+	#					acc *= (boundmax/gridSize)/mag
+	#					drawLine(drawPtr, p, p+acc, (255,int(255*mag/MAX_ACC),0) )
+
+def drawVels(drawPtr):
+		for x in xrange(N):
+				if UNIVERSE.inside(POSITION[x]):
+						drawLine(drawPtr, POSITION[x], POSITION[x]+VELOCITY[x], (0,0,255) )
+
+def drawAccs(drawPtr):
+		for x in xrange(N):
+				if UNIVERSE.inside(POSITION[x]):
+						drawLine(drawPtr, POSITION[x], POSITION[x]+ACCELERATION[x], (255,0,0) )
+
+def join(p1,p2):
+		return ([p1[0],p1[1],p2[0],p2[1]])
+
+def drawBOX(drawPtr, foo):
+		if foo.depth == 0:
+				drawCross(drawPtr,foo.center)
+
+		p = join(convertPos(foo.universe.min()),
+						 convertPos(foo.universe.max()))
+		drawPtr.rectangle( p , outline=(0,0,255) )
+
+def drawLine(drawPtr, p1, p2, color):
+		drawPtr.line( join( convertPos(p1) , convertPos(p2) ), fill=color )
+
+def drawCross(drawPtr, p):
+		global CROSS_SIZE
+		p = convertPos(p)
+		drawPtr.line( (p[0]-CROSS_SIZE,p[1],p[0]+CROSS_SIZE,p[1]), fill=(0,255,0) )
+		drawPtr.line( (p[0],p[1]-CROSS_SIZE,p[0],p[1]+CROSS_SIZE), fill=(0,255,0) )
+
+def drawTree(drawPtr ,bar):
+		drawTreeDetail(drawPtr, bar.tree)
+def drawTreeDetail(drawPtr, tree):
+		drawBOX(drawPtr,tree)
+		for child in tree.children:
+				if child != None:
+						drawTreeDetail(drawPtr,child)
 def drawBodies(drawPtr): #Draw body
 	global R
 	for x in xrange(N):
@@ -220,15 +271,19 @@ def task_update(): #time
 	global Time, icon
 	
 	Time += Skip_Time #Time change
-	
+	sys.generate()
+
 	im = Image.new('RGB', IMAGE_SIZE, (255,255,255)) #Drawing part
 	draw = ImageDraw.Draw(im)
-	drawBodies(draw)
 	
+	drawTree(draw,sys)
+	drawBodies(draw)
+	drawVels(draw)
+	drawAccs(draw)
 	sys.updateSys(Skip_Time) #Updating Physics
 
-	icon = ImageTk.PhotoImage(im)
-	label_image.config(image=icon)
+	ICON = ImageTk.PhotoImage(im)
+	label_image.config(image=ICON)
 	label_image.pack()
 
 	root.after(10,task_update)
@@ -247,6 +302,8 @@ im = Image.new('RGB', IMAGE_SIZE, (255,255,255)) #First drawing
 draw = ImageDraw.Draw(im)
 drawBodies(draw)
 
+ICON = None
+print "here"
 task_update() 
 root.mainloop() #Start of loop
 print "Done."
