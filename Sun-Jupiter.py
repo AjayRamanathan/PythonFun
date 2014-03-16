@@ -28,11 +28,11 @@ def main():
 	sun_radius = 696342/constant
 
 	jb_x,jb_y = 200,200
-	jb_color = (250, 100, 0)
+	jb_color = (255, 100, 0)
 	jb_radius = 69911/constant
 
 	cg_color = (0, 0, 0)
-	cg_radius = 4*10000/constant
+	cg_radius = 4*5000/constant
 
 	background = pygame.Surface(screen.get_size())
 	background = background.convert()
@@ -57,9 +57,12 @@ def main():
 			pygame.display.flip()
 		else:
 			screen.blit(background, (0, 0))
-			jb_x,jb_y = JUPITER[1][1], JUPITER[1][2]
+			jb_x = 400 + int(JUPITER[1][1]/(constant*R))
+			jb_y = 400 + int(JUPITER[1][2]/(constant*R))
+			print jb_x
+			print jb_y
 			x,y=pygame.mouse.get_pos()
-			pygame.draw.circle(screen, sun_color, (sun_x, sun_y), int(sun_radius+1))
+			#pygame.draw.circle(screen, sun_color, (sun_x, sun_y), int(sun_radius+1))
 			pygame.draw.circle(screen, cg_color, (x, y), cg_radius)
 			pygame.draw.circle(screen, jb_color, (jb_x, jb_y), jb_radius)		
 			pygame.display.flip()
