@@ -2,13 +2,13 @@
 # A N-Body problem solver 
 
 from numpy import *
-from random import random,seed
+from random import random
 import Tkinter
 from PIL import Image, ImageDraw
 import ImageTk
 from time import time
 
-N = 50
+N = 25
 #Number of Particles
 G = 0.125
 #Gravitional Constant
@@ -16,7 +16,7 @@ R = 4
 #Radius; changes the radius in UI
 CONSTANT = 0.5
 #Barnes-Hut Constant
-MAXDEPTH = 0
+MAXDEPTH = 10
 #GRID_SIZE = 10
 CROSS_SIZE = 20
 
@@ -91,20 +91,21 @@ class Tree:
 		def addBody(self, k,depth):
 				if len(self.bodies) > 0 or not self.leaf:
 						if (depth >= MAXDEPTH):
-								self.bods.append(k)
+							self.bodies.append(k)
+
 						else:
 								subBodies = [k]
 								if len(self.bodies) > 0:
 										subBodies.append(self.bodies[0])
 										self.bodies = []
 
-								for bodiees in subBodies:
+								for bodies in subBodies:
 										ID = self.getTreenumber(bodies)
 										if self.children[ID]:
 												self.children[ID].addBody(bodies,depth+1)
 										else:
-												subuniverse = self.universe.getSubQuad(ID)
-												self.children[ID] = Quad(subuniverse, bodies, depth+1)
+												subuniverse = self.universe.getsubnumber(ID)
+												self.children[ID] = Tree(subuniverse, bodies, depth+1)
 
 								self.leaf = False
 
@@ -123,26 +124,31 @@ class Tree:
 						self.com = array(map(lambda child: child.mass*child.com if child else zeros(2), self.children)).sum(0) / self.mass
 				
 		def setToBody(self,k):
-				self.bods = [k]
+				self.bodies = [k]
 				self.mass = float( MASS[k].copy() )
-				self.center = POS[k].copy()
+				self.center = POSITION[k].copy()
 
 		def getTreenumber(self,k):
-				return self.universe.getTreenumber(POS[k])
+				return self.universe.getnumber(POS[k])
 
 class Physics: #Class Physics: Physics of the system
 	global N, CONSTANT
 	tree = None
 	
-	def __init__(self, universe):
+	def __init__(self, universe, constant = CONSTANT):
 		self.universe = universe
+		self.constant = constant
 		self.initialize()
+
 	def initialize(self):
 		self.tree = Tree(self.universe)
+	
 	def generate(self): #generate a new tree
-				self.initialize()
-				for x in xrange(self.tree.number): # For each body, add to tree
-						self.tree.addBody(x,0)  
+		global N
+		self.initialize()
+		for x in xrange(N):# For each body, add to tree
+				self.tree.addBody(x,0) 
+
 	def updateSys(self, Skip_Time):#Iterate over time
 		global VELOCITY, POSITION, ACCELERATION, MASS
 		self.calculateBHAcceleration()
@@ -163,8 +169,10 @@ class Physics: #Class Physics: Physics of the system
 
 	def calculateBHAcceleration(self):#Calculate Accceleration of all the bodies
 		for i in xrange(N):
-			ACCELERATION[i] = self.calculateBHBodyAcceleration(i, self.tree) 
-
+			ACCELERATION[i] = self.calculateBHTreeAcceleration(i) 
+		
+	def calculateBHTreeAcceleration(self, i):
+		return self.calculateBHBodyAcceleration(i, self.tree)	
 	def calculateBHBodyAcceleration(self, i, tree):  #calculate the acceleration of one body            
 		acc = zeros((1,2),dtype=float)
 		if (tree.leaf):
@@ -172,19 +180,41 @@ class Physics: #Class Physics: Physics of the system
 						if k != i:
 								acc += getAcceleration( POSITION[i] ,MASS[i],POSITION[k],MASS[k])
 		else:
-				maxlength = max( node.box.sideLength )
+				maxlength = max( tree.universe.length )
 				vector = tree.center - POSITION[i]
 				radius = sqrt(vector.dot(vector))
-				if (radius > 0 and maxlength/radius < CONSTANT):
-						acc += getAcceleration( POSITION[i] ,MASS[i], tree.position, tree.mass)
+				print maxlength/radius
+				if (radius > 0 and maxlength/radius < self.constant):
+						acc += getAcceleration( POSITION[i] ,MASS[i], tree.center, tree.mass)
 				else:
 						for k in xrange(4):
 								if tree.children[k] != None:
-										acc += self.calculateBodyAccelR(k, node.children[k])
-				return acc
-		for k in xrange(N):
-			if i != k and MASS[i] != 0:
-				 acc -= getAcceleration(POSITION[k], MASS[k], POSITION[i], MASS[i]) #Sum of all accelerations
+										acc += self.calculateBHBodyAcceleration(i, tree.children[k])	
+										print acc
+
+	def getnumber(self,i):
+				if p[0] > self.center[0]: 
+						if i[1] > self.center[1]: 
+								return 1
+						else:
+								return 3
+				else:
+						if i[1] > self.center[1]: 
+								return 0
+						else:
+								return 2
+	def getsubnumber(self,k):
+				b = array([None,None,None,None])
+				if k % 2 == 0:
+						b[::2] = [self.box[0], self.center[0]]
+				else:
+						b[::2] = [self.center[0], self.box[2]]
+				if k < 2:
+						b[1::2] = [self.center[1], self.box[3]]
+				else:
+						b[1::2] = [self.box[1], self.center[1]]
+				return Universe(b,self.dimension)								
+		
 		return acc
 
 def getAcceleration(p1,m1,p2,m2): #Calculates acceleration between two objects
@@ -285,6 +315,7 @@ root.bind("<Button>", button_click_exit_mainloop)
 label_image = Tkinter.Label(root)
 Time += Skip_Time #First time change
 
+sys.generate()
 sys.updateSys(Skip_Time)
 
 im = Image.new('RGB', IMAGE_SIZE, (255,255,255)) #First drawing
