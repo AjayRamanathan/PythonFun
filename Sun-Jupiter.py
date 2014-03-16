@@ -38,12 +38,14 @@ def main():
 			if event.type == QUIT:
 				return
 		if n > N:
+			screen.blit(background, (0, 0))
 			font = pygame.font.Font(None, 36)
 			text = font.render("End of event", 1, (10, 10, 10))
 			textpos = text.get_rect()
 			textpos.centerx = background.get_rect().centerx
 			textpos.centery = background.get_rect().centery
 			background.blit(text, textpos)
+			pygame.display.flip()
 		else:
 			screen.blit(background, (0, 0))
 			x,y=pygame.mouse.get_pos()
