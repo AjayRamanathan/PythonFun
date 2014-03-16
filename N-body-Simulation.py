@@ -8,7 +8,7 @@ from PIL import Image, ImageDraw
 import ImageTk
 from time import time
 
-N = 2
+N = 5
 G = 0.125
 R = 5
 
@@ -71,11 +71,10 @@ class Physics:
 	def checkCollision(self):
 		global R
 		for i in xrange(N):
-			if MASS[i] != 0:
-			  for k in xrange(N):
-				  if i != k and MASS[k] != 0: 
+			for k in xrange(N):
+				if i != k and MASS[k]!= 0:
 						Distance = getDistance(POSITION[k], POSITION[i])
-						if Distance < (MASS[i]*0.1+MASS[k]*0.1):
+						if Distance < (MASS[i]*0.5+MASS[k]*0.5):
 						#Work Needed	
 								VELOCITY[i] = ((MASS[i]*VELOCITY[i])+(MASS[k]*VELOCITY[k]))/(MASS[i]+MASS[k])
 								POSITION[i] = ((MASS[i]*POSITION[i])+(MASS[k]*POSITION[k]))/(MASS[i]+MASS[k])
@@ -97,7 +96,7 @@ def getAcceleration(p1,m1,p2,m2):
 	vector = p2-p1
 	radius = sqrt(vector.dot(vector))
 	acceleration = 0
-	if radius != 0:
+	if m1 != 0 and m2 != 0:
 	  acceleration = array(( vector * G*m1*m2 / radius**3 ))/m1  
 	return acceleration   
 
