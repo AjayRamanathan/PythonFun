@@ -8,7 +8,7 @@ from PIL import Image, ImageDraw
 import ImageTk
 from time import time
 
-N = 100
+N = 5
 #Number of Particles
 G = 0.125
 #Gravitional Constant
@@ -184,7 +184,7 @@ class Physics: #Class Physics: Physics of the system
 				return acc
 		for k in xrange(N):
 			if i != k and MASS[i] != 0:
-				 acc += getAcceleration(POSITION[k], MASS[k], POSITION[i], MASS[i]) #Sum of all accelerations
+				 acc -= getAcceleration(POSITION[k], MASS[k], POSITION[i], MASS[i]) #Sum of all accelerations
 		return acc
 
 def getAcceleration(p1,m1,p2,m2): #Calculates acceleration between two objects
@@ -201,18 +201,6 @@ def getDistance(p1,p2): #calculates Distance between two objects
 	return distance   
 	
 sys = Physics(UNIVERSE) #Physics Initiated
-
-#def drawAccelGrid(drawPtr, gridSize):
-
-#		MAX_ACC = 1
-#		boundmax = max(UNIVERSE.max())
-#		for x in xrange(gridSize):
-	#			for y in xrange(gridSize):
-	#					p = array([x+0.5,y+0.5],dtype=float) * UNIVERSE.length / gridSize
-	#					acc = sys.calculateAccel(p)
-	#					mag = sqrt((acc*acc).sum())
-	#					acc *= (boundmax/gridSize)/mag
-	#					drawLine(drawPtr, p, p+acc, (255,int(255*mag/MAX_ACC),0) )
 
 def drawVels(drawPtr):
 		for x in xrange(N):
@@ -245,12 +233,14 @@ def drawCross(drawPtr, p):
 		drawPtr.line( (p[0],p[1]-CROSS_SIZE,p[0],p[1]+CROSS_SIZE), fill=(0,255,0) )
 
 def drawTree(drawPtr ,bar):
-		drawTreeDetail(drawPtr, bar.tree)
+	print "1"
+	drawTreeDetail(drawPtr, bar.tree)
 def drawTreeDetail(drawPtr, tree):
-		drawBOX(drawPtr,tree)
-		for child in tree.children:
-				if child != None:
-						drawTreeDetail(drawPtr,child)
+	print "2"
+	drawBOX(drawPtr,tree)
+	for child in tree.children:
+		if child != None:
+			drawTreeDetail(drawPtr,child)
 def drawBodies(drawPtr): #Draw body
 	global R
 	for x in xrange(N):
@@ -268,7 +258,7 @@ def join(p1,p2): #line between Two points
 		return ([p1[0],p1[1],p2[0],p2[1]])  
 
 def task_update(): #time
-	global Time, icon
+	global Time, ICON
 	
 	Time += Skip_Time #Time change
 	sys.generate()
@@ -303,7 +293,6 @@ draw = ImageDraw.Draw(im)
 drawBodies(draw)
 
 ICON = None
-print "here"
 task_update() 
 root.mainloop() #Start of loop
 print "Done."
