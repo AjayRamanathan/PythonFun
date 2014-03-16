@@ -34,103 +34,6 @@ Time = 0
 IMAGE_SIZE = (600,400)
 #Screen Size
 #Needs work; error auto-resize for other resolution
-
-class Universe:#Class Universe; Boundaries
-	def __init__(self,edge,dimension=2):
-		assert(dimension*2 == len(edge))    #check dimensions
-		self.edge = array(edge,dtype=float) #edge co-ordinate
-		self.dimension = dimension
-		self.center = array( [(self.edge[2]+self.edge[0])/2, (self.edge[3]+self.edge[1])/2] , dtype=float) #center
-		self.length = self.max() - self.min() #array of two lengths
-
-	def max(self):
-		return self.edge[self.dimension:] #max
-	
-	def min(self):
-		return self.edge[:self.dimension] #min
-	
-	def __repr__(self):
-		return self.__str__()
-
-	def inside(self,p): #checks whether object is inside or outside
-		if any(p < self.min()) or any(p > self.max()):
-			return False
-		else:
-			return True    
-	
-	def __str__(self): #Output
-		return "<<%g,%g,%g,%g>>" % (self.edge[0],self.edge[1],self.edge[2],self.edge[3])
-
-UNIVERSE = Universe([0,0,10,10])        
-#Initialization of universe corner co-ordinates
-
-for i in xrange(N):
-	MASS[i] = 1
-	#MASS can be set as random too
-	POSITION[i] = UNIVERSE.min() + array([random(),random()])*UNIVERSE.length
-	#Random Initial position
-
-class Tree:
-		#A smaller rectangles, contains some point bodies considered as one
-		def __init__(self,universe,bodies = None,depth=0):
-				self.universe = universe
-				self.center = universe.center
-				self.leaf = True # Whether is a parent or not
-				self.depth = depth
-				if bodies != None: # want to capture 0 int also
-						self.setToBody(bodies)
-						self.number = 1
-				else:
-						self.bodies = []
-						self.mass = 0.
-						self.center = array([0,0], dtype=float)
-						self.number = 0
-						
-				self.children = [None]*4
-
-		def addBody(self, k,depth):
-				if len(self.bodies) > 0 or not self.leaf:
-						if (depth >= MAXDEPTH):
-							self.bodies.append(k)
-
-						else:
-								subBodies = [k]
-								if len(self.bodies) > 0:
-										subBodies.append(self.bodies[0])
-										self.bodies = []
-
-								for bodies in subBodies:
-										ID = self.getTreenumber(bodies)
-										if self.children[ID]:
-												self.children[ID].addBody(bodies,depth+1)
-										else:
-												subuniverse = self.universe.getsubnumber(ID)
-												self.children[ID] = Tree(subuniverse, bodies, depth+1)
-
-								self.leaf = False
-
-						weight = MASS[k]
-						self.center = (self.center * self.mass + POSITION[k] * weight) / (self.mass + weight)
-						self.mass += weight
-				else:
-						self.setToBody(k)
-
-		def updatecenter(self):
-				if self.leaf:
-						self.mass = array(map(lambda x: MASS[x], self.bodies)).sum() #Total Mass
-						self.center = array(map(lambda x: POS[x]*MASS[x], self.bodies)).sum(0) / self.mass #New Center of mass
-				else:
-						self.mass = array(map(lambda child: child.mass if child else 0, self.children)).sum()  #Mass and Center of child-nodes
-						self.com = array(map(lambda child: child.mass*child.com if child else zeros(2), self.children)).sum(0) / self.mass
-				
-		def setToBody(self,k):
-				self.bodies = [k]
-				self.mass = float( MASS[k].copy() )
-				self.center = POSITION[k].copy()
-
-		def getTreenumber(self,k):
-				return self.universe.getnumber(POS[k])
-
 class Physics: #Class Physics: Physics of the system
 	global N, CONSTANT
 	tree = None
@@ -183,17 +86,33 @@ class Physics: #Class Physics: Physics of the system
 				maxlength = max( tree.universe.length )
 				vector = tree.center - POSITION[i]
 				radius = sqrt(vector.dot(vector))
-				print maxlength/radius
 				if (radius > 0 and maxlength/radius < self.constant):
 						acc += getAcceleration( POSITION[i] ,MASS[i], tree.center, tree.mass)
 				else:
 						for k in xrange(4):
 								if tree.children[k] != None:
-										acc += self.calculateBHBodyAcceleration(i, tree.children[k])	
-										print acc
+										acc += self.calculateBHBodyAcceleration(i, tree.children[k])
+		return acc									
 
+class Universe:#Class Universe; Boundaries
+	def __init__(self,edge,dimension=2):
+		assert(dimension*2 == len(edge))    #check dimensions
+		self.edge = array(edge,dtype=float) #edge co-ordinate
+		self.dimension = dimension
+		self.center = array( [(self.edge[2]+self.edge[0])/2, (self.edge[3]+self.edge[1])/2] , dtype=float) #center
+		self.length = self.max() - self.min() #array of two lengths
+
+	def max(self):
+		return self.edge[self.dimension:] #max
+	
+	def min(self):
+		return self.edge[:self.dimension] #min
+	
+	def __repr__(self):
+		return self.__str__()
+	
 	def getnumber(self,i):
-				if p[0] > self.center[0]: 
+				if i[0] > self.center[0]: 
 						if i[1] > self.center[1]: 
 								return 1
 						else:
@@ -206,16 +125,95 @@ class Physics: #Class Physics: Physics of the system
 	def getsubnumber(self,k):
 				b = array([None,None,None,None])
 				if k % 2 == 0:
-						b[::2] = [self.box[0], self.center[0]]
+						b[::2] = [self.edge[0], self.center[0]]
 				else:
-						b[::2] = [self.center[0], self.box[2]]
+						b[::2] = [self.center[0], self.edge[2]]
 				if k < 2:
-						b[1::2] = [self.center[1], self.box[3]]
+						b[1::2] = [self.center[1], self.edge[3]]
 				else:
-						b[1::2] = [self.box[1], self.center[1]]
-				return Universe(b,self.dimension)								
+						b[1::2] = [self.edge[1], self.center[1]]
+				return Universe(b,self.dimension)  
+	def inside(self,p): #checks whether object is inside or outside
+		if any(p < self.min()) or any(p > self.max()):
+			return False
+		else:
+			return True    
+	
+	def __str__(self): #Output
+		return "<<%g,%g,%g,%g>>" % (self.edge[0],self.edge[1],self.edge[2],self.edge[3])
+
+UNIVERSE = Universe([0,0,10,10])        
+#Initialization of universe corner co-ordinates
+
+for i in xrange(N):
+	MASS[i] = 1
+	#MASS can be set as random too
+	POSITION[i] = UNIVERSE.min() + array([random(),random()])*UNIVERSE.length
+	#Random Initial position
+
+class Tree:
+	#A smaller rectangles, contains some point bodies considered as one
+	def __init__(self,universe,bodies = None,depth=0):
+		self.universe = universe
+		self.center = universe.center
+		self.leaf = True # Whether is a parent or not
+		self.depth = depth
+		if bodies != None: # want to capture 0 int also
+			self.setToBody(bodies)
+			self.number = 1
+		else:
+			self.bodies = []
+			self.mass = 0.
+			self.center = array([0,0], dtype=float)
+			self.number = 0
+						
+		self.children = [None]*4
+	
+	def getTreenumber(self,k):
+				return self.universe.getnumber(POSITION[k])
+	
+	def setToBody(self,k):
+		self.bodies = [k]
+		self.mass = float( MASS[k].copy() )
+		self.center = POSITION[k].copy()
+
+	def addBody(self, k,depth):
+		if len(self.bodies) > 0 or not self.leaf:
+			if (depth >= MAXDEPTH):
+				self.bodies.append(k)
+			else:
+				subBodies = [k]
+				if len(self.bodies) > 0:
+					subBodies.append(self.bodies[0])
+					self.bodies = []
+
+				for bodies in subBodies:
+					ID = self.getTreenumber(bodies)
+					if self.children[ID]:
+						self.children[ID].addBody(bodies,depth+1)
+					else:
+						subuniverse = self.universe.getsubnumber(ID)
+						self.children[ID] = Tree(subuniverse, bodies, depth+1)
+
+			self.leaf = False
+			weight = MASS[k]
+			if weight!= 0:
+				self.center = (self.center * self.mass + POSITION[k] * weight) / (self.mass + weight)
+				self.mass += weight
+			else:
+				self.center = self.center
+				self.mass += weight	
 		
-		return acc
+		else:
+			self.setToBody(k)
+
+		def updatecenter(self):
+				if self.leaf:
+						self.mass = array(map(lambda x: MASS[x], self.bodies)).sum() #Total Mass
+						self.center = array(map(lambda x: POS[x]*MASS[x], self.bodies)).sum(0) / self.mass #New Center of mass
+				else:
+						self.mass = array(map(lambda child: child.mass if child else 0, self.children)).sum()  #Mass and Center of child-nodes
+						self.com = array(map(lambda child: child.mass*child.com if child else zeros(2), self.children)).sum(0) / self.mass								
 
 def getAcceleration(p1,m1,p2,m2): #Calculates acceleration between two objects
 	vector = p2-p1
@@ -251,7 +249,6 @@ def drawBOX(drawPtr, foo):
 
 		p = join(convertPos(foo.universe.min()),
 						 convertPos(foo.universe.max()))
-		print p
 		drawPtr.rectangle( p , outline=(0,0,255) )
 
 def drawLine(drawPtr, p1, p2, color):
@@ -325,4 +322,3 @@ drawBodies(draw)
 ICON = None
 task_update() 
 root.mainloop() #Start of loop
-print "Done."
