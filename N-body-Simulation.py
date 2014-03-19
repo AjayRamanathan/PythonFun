@@ -1,5 +1,4 @@
 #! /usr/bin/python 
-#! /usr/bin/python 
 # A Simple N-Body problem. Direct Method.
 #Bug#1 Better Particle system using class particle
 #Bug#2 Use pygame to display
