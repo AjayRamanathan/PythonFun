@@ -1,5 +1,10 @@
 #! /usr/bin/python 
-# A N-Body problem solver 
+# A Barnes-Hut algorithim N-Body problem.
+#Bug#1 Better Particle system using class particle
+#Bug#2 Use pygame to display
+#Bug#3 Better collision detection as you have adjust everytime you change radius#
+#Bug#4 Better collision check only in the subtree
+#Bug#5 Parallel Computing
 
 from numpy import *
 from random import random
@@ -8,7 +13,7 @@ from PIL import Image, ImageDraw
 import ImageTk
 from time import time
 
-N = 25
+N = 25 #Change line #15 and #63 if you change N
 #Number of Particles
 G = 0.125
 #Gravitional Constant
