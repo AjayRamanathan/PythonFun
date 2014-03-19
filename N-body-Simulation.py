@@ -1,5 +1,10 @@
 #! /usr/bin/python 
-# A N-Body problem solver 
+#! /usr/bin/python 
+# A Simple N-Body problem. Direct Method.
+#Bug#1 Better Particle system using class particle
+#Bug#2 Use pygame to display
+#Bug#3 Better collision detection as you have adjust everytime you change radius
+#Bug#5 Parallel Computing
 
 from numpy import *
 from random import random,seed
@@ -8,11 +13,11 @@ from PIL import Image, ImageDraw
 import ImageTk
 from time import time
 
-N = 5
+N = 20 #If you change this change line #15 and Line #92
 #Number of Particles
 G = 0.125
 #Gravitional Constant
-R = 5
+R = 4
 #Radius; changes the radius in UI
 
 MASS = zeros(N,dtype=float)
